@@ -1,14 +1,4 @@
-//! Chat P2P na rede local, com interface de terminal (TUI).
-//!
-//! - Cada instância é ao mesmo tempo "servidor" e "cliente" (sem servidor central).
-//! - Descoberta automática na LAN via UDP broadcast + conexão TCP entre os pares.
-//! - As mensagens são repassadas (gossip) entre os pares, então mesmo uma
-//!   conexão manual (/conectar) forma uma rede onde todos se enxergam.
-//! - A interface separa a área de mensagens da caixa de digitação: o que você
-//!   está escrevendo nunca é interrompido por mensagens que chegam.
-//!
-//! Uso:  cargo run --release -- [nome] [porta] [ip:porta ...]
-//e
+
 use std::collections::hash_map::RandomState;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasher, Hasher};
@@ -460,6 +450,12 @@ fn run(term: &mut DefaultTerminal, ctx: Arc<Ctx>, rx: Receiver<Evt>) -> io::Resu
 // ───────────────────────────── main ─────────────────────────────
 
 fn main() -> io::Result<()> {
+     #[cfg(windows)]
+    {
+        let mut res = winresource::WindowsResource::new();
+        res.set_icon("./imagens/icon.ico"); 
+        res.compile().unwrap();
+    }
     let mut name: Option<String> = None;
     let mut port = DEFAULT_PORT;
     let mut manual_peers: Vec<SocketAddr> = Vec::new();
