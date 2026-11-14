@@ -1,4 +1,3 @@
-
 use std::collections::hash_map::RandomState;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasher, Hasher};
@@ -22,7 +21,6 @@ use ratatui::{DefaultTerminal, Frame};
 
 const DEFAULT_PORT: u16 = 3942;
 const DISCOVERY_PORT: u16 = 3943;
-const DISCOVERY_MAGIC: &str = "AIRMINAS1";
 
 // ───────────────────────── Estado compartilhado ─────────────────────────
 
@@ -191,7 +189,7 @@ fn start_discovery(ctx: Arc<Ctx>) -> io::Result<()> {
 
     // Anunciante
     let sender = udp.try_clone()?;
-    let announce = format!("{DISCOVERY_MAGIC}\t{}\t{}", ctx.id, ctx.tcp_port);
+    let announce = format!("{}\t{}", ctx.id, ctx.tcp_port);
     thread::spawn(move || loop {
         let _ = sender.send_to(
             announce.as_bytes(),
@@ -207,10 +205,10 @@ fn start_discovery(ctx: Arc<Ctx>) -> io::Result<()> {
             let Ok((n, src)) = udp.recv_from(&mut buf) else { continue };
             let msg = String::from_utf8_lossy(&buf[..n]);
             let p: Vec<&str> = msg.trim().split('\t').collect();
-            if p.len() != 3 || p[0] != DISCOVERY_MAGIC {
+            if p.len() != 2 {
                 continue;
             }
-            let (Ok(peer_id), Ok(port)) = (p[1].parse::<u64>(), p[2].parse::<u16>()) else {
+            let (Ok(peer_id), Ok(port)) = (p[0].parse::<u64>(), p[1].parse::<u16>()) else {
                 continue;
             };
             if peer_id == ctx.id || ctx.id > peer_id {
@@ -265,14 +263,8 @@ fn wrap(s: &str, width: usize) -> Vec<String> {
 }
 
 fn draw(f: &mut Frame, app: &mut App, ctx: &Ctx) {
-    let areas = Layout::vertical([
-        Constraint::Length(3),
-        Constraint::Min(3),
-        Constraint::Length(3),
-    ])
-    .split(f.area());
-
-    // Cabeçalho: quem está na sala
+    // Cabeçalho: seu nome + quem está na sala. Quebra em várias linhas,
+    // então nomes longos (ou muitos pares) nunca são cortados.
     let peers: Vec<String> = ctx
         .state
         .lock()
@@ -281,17 +273,28 @@ fn draw(f: &mut Frame, app: &mut App, ctx: &Ctx) {
         .values()
         .map(|p| p.name.clone())
         .collect();
-    let header = if peers.is_empty() {
+    let status = if peers.is_empty() {
         "Procurando pares na rede...".to_string()
     } else {
         format!("Conectados ({}): {}", peers.len(), peers.join(", "))
     };
+    let header = format!("Você: {} (porta {}) — {}", ctx.name, ctx.tcp_port, status);
+    let header_w = f.area().width.saturating_sub(2) as usize;
+    let header_rows: Vec<Line> = wrap(&header, header_w).into_iter().map(Line::from).collect();
+    // Altura do cabeçalho cresce com o conteúdo, deixando espaço para o resto da tela
+    let max_h = f.area().height.saturating_sub(6).max(3);
+    let header_h = ((header_rows.len() + 2) as u16).min(max_h);
+
+    let areas = Layout::vertical([
+        Constraint::Length(header_h),
+        Constraint::Min(3),
+        Constraint::Length(3),
+    ])
+    .split(f.area());
+
     f.render_widget(
-        Paragraph::new(header).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(format!(" P2P Chat — {} (porta {}) ", ctx.name, ctx.tcp_port)),
-        ),
+        Paragraph::new(header_rows)
+            .block(Block::default().borders(Borders::ALL).title(" P2P Chat ")),
         areas[0],
     );
 
