@@ -294,7 +294,7 @@ fn draw(f: &mut Frame, app: &mut App, ctx: &Ctx) {
 
     f.render_widget(
         Paragraph::new(header_rows)
-            .block(Block::default().borders(Borders::ALL).title(" P2P Chat ")),
+            .block(Block::default().borders(Borders::ALL).title(" P2P Chat ").border_style(Style::default().fg(Color::Green))),
         areas[0],
     );
 
@@ -328,7 +328,7 @@ fn draw(f: &mut Frame, app: &mut App, ctx: &Ctx) {
     };
     f.render_widget(
         Paragraph::new(rows[start..end].to_vec())
-            .block(Block::default().borders(Borders::ALL).title(title)),
+            .block(Block::default().borders(Borders::ALL).title(title).border_style(Style::default().fg(Color::White))),
         areas[1],
     );
 
@@ -341,7 +341,8 @@ fn draw(f: &mut Frame, app: &mut App, ctx: &Ctx) {
         Paragraph::new(visible).block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(" Enter envia · ↑↓ PgUp PgDn rolam · /sair "),
+                .border_style(Style::default().fg(Color::Blue))
+                .title("> Enter envia · ↑↓ PgUp PgDn rolam · e digite /sair para sair <"),
         ),
         areas[2],
     );
@@ -453,12 +454,6 @@ fn run(term: &mut DefaultTerminal, ctx: Arc<Ctx>, rx: Receiver<Evt>) -> io::Resu
 // ───────────────────────────── main ─────────────────────────────
 
 fn main() -> io::Result<()> {
-     #[cfg(windows)]
-    {
-        let mut res = winresource::WindowsResource::new();
-        res.set_icon("./imagens/icon.ico"); 
-        res.compile().unwrap();
-    }
     let mut name: Option<String> = None;
     let mut port = DEFAULT_PORT;
     let mut manual_peers: Vec<SocketAddr> = Vec::new();

@@ -7,5 +7,5 @@ edition = "2024"
 ratatui = "0.30.2"
 socket2 = { version = "0.6.5", features = ["all"] }
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
